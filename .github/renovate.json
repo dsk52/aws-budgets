@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>dsk52/renovate-config",
+    "github>dsk52/renovate-config:groupLinters",
+    "github>dsk52/renovate-config:groupType"
+  ],
+  "schedule": [
+    "every weekend"
+  ],
+  "baseBranches": [
+    "main"
+  ],
+  "npm": {
+    "enabled": true
+  }
+}

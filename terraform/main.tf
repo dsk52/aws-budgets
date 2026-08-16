@@ -50,27 +50,28 @@ resource "aws_sns_topic_policy" "budget_alerts_publish" {
   })
 }
 
-resource "aws_sns_topic" "health_check" {
-  name = "HealthCheckNotificationStack-HealthCheckTopic4D4B188A-DL8RJOyqk6Au"
+resource "aws_sns_topic" "health_check_us_east_1" {
+  provider = aws.us_east_1
+  name     = "HealthCheckNotificationStack-HealthCheckTopic4D4B188A-DL8RJOyqk6Au"
 }
 
 resource "aws_chatbot_slack_channel_configuration" "budget_alerts" {
   configuration_name = "BudgetAlertsChannel"
   slack_team_id      = var.slack_team_id
   slack_channel_id   = var.slack_channel_id
-  iam_role_arn        = aws_iam_role.chatbot_role.arn
+  iam_role_arn       = aws_iam_role.chatbot_role.arn
 
   sns_topic_arns = [
     aws_sns_topic.budget_alerts.arn,
-    aws_sns_topic.health_check.arn,
+    aws_sns_topic.health_check_us_east_1.arn,
   ]
 }
 
 resource "aws_budgets_budget" "monthly_cost" {
-  provider    = aws.us_east_1
-  name        = "MonthlyCostBudget"
-  budget_type = "COST"
-  time_unit   = "MONTHLY"
+  provider     = aws.us_east_1
+  name         = "MonthlyCostBudget"
+  budget_type  = "COST"
+  time_unit    = "MONTHLY"
   limit_amount = "20"
   limit_unit   = "USD"
 
@@ -90,20 +91,6 @@ resource "aws_budgets_budget" "monthly_cost" {
     threshold_type      = "PERCENTAGE"
 
     subscriber_sns_topic_arns = [aws_sns_topic.budget_alerts.arn]
-  }
-}
-
-resource "aws_route53_health_check" "main_site" {
-  type              = "HTTPS"
-  fqdn              = "daisukekonishi.com"
-  port              = 443
-  resource_path     = "/"
-  failure_threshold = 3
-  request_interval  = 30
-  regions           = ["ap-northeast-1", "ap-southeast-1", "us-west-2"]
-
-  tags = {
-    Name = "MainSite"
   }
 }
 
@@ -135,24 +122,8 @@ resource "aws_route53_health_check" "memo_drip" {
   }
 }
 
-resource "aws_cloudwatch_metric_alarm" "main_site" {
-  alarm_name          = "daisukekonishi.com-health-check"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  threshold           = 1
-  metric_name         = "HealthCheckStatus"
-  namespace           = "AWS/Route53"
-  statistic           = "Minimum"
-  period              = 60
-
-  dimensions = {
-    HealthCheckId = aws_route53_health_check.main_site.id
-  }
-
-  alarm_actions = [aws_sns_topic.health_check.arn]
-}
-
-resource "aws_cloudwatch_metric_alarm" "blog_site" {
+resource "aws_cloudwatch_metric_alarm" "blog_site_us_east_1" {
+  provider            = aws.us_east_1
   alarm_name          = "blog.daisukekonishi.com-health-check"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 2
@@ -166,10 +137,11 @@ resource "aws_cloudwatch_metric_alarm" "blog_site" {
     HealthCheckId = aws_route53_health_check.blog_site.id
   }
 
-  alarm_actions = [aws_sns_topic.health_check.arn]
+  alarm_actions = [aws_sns_topic.health_check_us_east_1.arn]
 }
 
-resource "aws_cloudwatch_metric_alarm" "memo_drip" {
+resource "aws_cloudwatch_metric_alarm" "memo_drip_us_east_1" {
+  provider            = aws.us_east_1
   alarm_name          = "memodrip.net-health-check"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 2
@@ -183,5 +155,5 @@ resource "aws_cloudwatch_metric_alarm" "memo_drip" {
     HealthCheckId = aws_route53_health_check.memo_drip.id
   }
 
-  alarm_actions = [aws_sns_topic.health_check.arn]
+  alarm_actions = [aws_sns_topic.health_check_us_east_1.arn]
 }
